@@ -1,8 +1,8 @@
-### coldfusion-java-callbacks
+## coldfusion-java-callbacks
 
 This project demonstrates how we may pass arbitrary data from the ColdFusion environment into a custom `.jar`. The method may either return results directly back in the ColdFusion environment, or defer execution to another function in ColdFusion in an event-driven style.
 
-##### Configuration
+#### Configuration
 To test this project, ensure the following:
   - The project exists within the `<ColdFusion-Home>/cfusion/wwwroot/` directory.
   - The compiled `.jar` is copied into `<ColdFusion-Home>/cfusion/wwwroot/WEB-INF/lib/`, where all of ColdFusion's runtime `.jar`s are held.
