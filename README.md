@@ -1,4 +1,4 @@
-#### coldfusion-java-callbacks
+### coldfusion-java-callbacks
 
 This project demonstrates how we may pass arbitrary data from the ColdFusion environment into a custom `.jar`. The method may either return results directly back in the ColdFusion environment, or defer execution to another function in ColdFusion in an event-driven style.
 
