@@ -1,0 +1,13 @@
+apply plugin: 'java-library'
+
+jar {
+    baseName 'zonal'
+    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+}
+
+dependencies {
+    compileOnly fileTree(include: ['*.jar'], dir: 'libs')
+}
+
+sourceCompatibility = "1.7"
+targetCompatibility = "1.7"
