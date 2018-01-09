@@ -6,6 +6,7 @@ jar {
 }
 
 dependencies {
+    /** TODO: Avoid using compile just for the StructWrapper... */
     compileOnly fileTree(include: ['*.jar'], dir: 'libs')
 }
 

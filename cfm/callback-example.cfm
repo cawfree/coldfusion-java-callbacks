@@ -1,6 +1,4 @@
 <!--- Alex Thomas @Cawfree, 2018. --->
-<!--- You *must* define a mapping for 'callbacks' in your Adiministrator Panel. --->
 
-<cfset inv = createObject("component", "callbacks/cfc/invokable").doInvoke(GetPageContext()) /> 
-
-<cfdump var="#inv#"/>
+<!--- Print the result of invocation. --->
+<cfdump var="#createObject("component", "callbacks/cfc/invokable").doInvoke(GetPageContext(), createObject("component", "callbacks/cfc/listener"))#"/>

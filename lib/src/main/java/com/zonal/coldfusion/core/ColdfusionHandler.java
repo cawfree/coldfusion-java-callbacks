@@ -2,10 +2,9 @@ package com.zonal.coldfusion.core;
 
 import java.lang.reflect.Method;
 import java.util.HashMap;
+import java.util.Map;
 
 import coldfusion.bootstrap.BootstrapClassLoader;
-import coldfusion.runtime.Struct;
-import coldfusion.runtime.StructWrapper;
 
 /**
  * Author: Alexander Thomas (@Cawfree), 2018.
@@ -19,56 +18,81 @@ public final class ColdfusionHandler {
 
     /* Static Declarations. */
     private static final String HANDLE_METHOD_INVOCATION_TEMPLATEPROXY = "invoke";
+    private static final String HANDLE_METHOD_INVOCATION_STRUCTWRAPPER = "setMap";
+    private static final String RESPONSE_SUCCESS                       = "success";
+    private static final String RESPONSE_ERRONEOUS                     = "error";
+    private static final String FIELD_RESPONSE                         = "response";
+    private static final String FIELD_CAUSE                            = "cause";
+    private static final String FIELD_TARGET                           = "target";
 
-    /** Test method to assure the compiled .jar is invoked correctly. (It should be placed in your <ColdFusion-Home>/cfusion/wwwroot/WEB-INF/lib/* directory.)*/
-    @SuppressWarnings("unused") public final boolean assertVisibility() {
-        // Print to the console.
-        System.out.println(this.getClass().getSimpleName() + " detected trigger.");
-        // Assert success.
-        return true;
+    /* Dynamic Reflection Classes. (Treat as final!) */
+    private static Class CLASS_DYNAMIC_TEMPLATEPROXY = null;
+    private static Class CLASS_DYNAMIC_PAGECONTEXT   = null;
+    private static Class CLASS_DYNAMIC_STRUCTWRAPPER = null;
+    private static Class CLASS_DYNAMIC_STRUCT        = null;
+
+    /* Prepare Static Dependencies. */
+    static {
+        try {
+            // Initialize reflection classes. (Although we don't package these within the compiled .jar, these should all be made available by the Coldfusion runtime.)
+            ColdfusionHandler.CLASS_DYNAMIC_TEMPLATEPROXY = BootstrapClassLoader.instance().loadClass("coldfusion.runtime.TemplateProxy");
+            ColdfusionHandler.CLASS_DYNAMIC_PAGECONTEXT   = BootstrapClassLoader.instance().loadClass("javax.servlet.jsp.PageContext");
+            ColdfusionHandler.CLASS_DYNAMIC_STRUCTWRAPPER = BootstrapClassLoader.instance().loadClass("coldfusion.runtime.StructWrapper");
+            ColdfusionHandler.CLASS_DYNAMIC_STRUCT        = BootstrapClassLoader.instance().loadClass("coldfusion.runtime.Struct");
+        }
+        catch(final ClassNotFoundException pClassNotFoundException) {
+            // Print the Stack Trace.
+            pClassNotFoundException.printStackTrace();
+            /** TODO: Log a warning somewhere to show that the configuration was in error. */
+        }
     }
 
     /** Invokable method; can be used to route a callback method. */
     @SuppressWarnings("unused") public  final Object invoke(final Object pTemplateProxy, final Object pPageContext, final Object pCallbackMethod, final Object pDataIn) {
         // Declare the ClassLoader.
         Thread.currentThread().setContextClassLoader(BootstrapClassLoader.instance());
-        // Declare a StructMapper.
-        final StructWrapper lStructWrapper = new StructWrapper();
+        // Declare Response Map.
+        final Map <String, Object> lResponseMap = new HashMap<>();
         // Enter error-susceptible body.
         try {
-            // Attempt to load the TemplateProxy and Struct classes from the runtime implementation of ColdFusion.
-            final Class lC = BootstrapClassLoader.instance().loadClass("coldfusion.runtime.TemplateProxy");
-            final Class lD = BootstrapClassLoader.instance().loadClass("javax.servlet.jsp.PageContext");
             // Cast the dependencies.
-            final Object lTemplateProxy = lC.cast(pTemplateProxy);
-            final Object lPageContext   = lD.cast(pPageContext);
+            final Object   lTemplateProxy = ColdfusionHandler.CLASS_DYNAMIC_TEMPLATEPROXY.cast(pTemplateProxy);
+            final Object   lPageContext   = CLASS_DYNAMIC_PAGECONTEXT.cast(pPageContext);
             // Declare response for callback.
-            final Object[] lResponse     = new Object[]{ pDataIn + " " + "world!"};
-            // Fetch the invocation method for TemplateProxys (used to communicate back to ColdFusion).
-            final Method  lMethod        = lTemplateProxy.getClass().getMethod(ColdfusionHandler.HANDLE_METHOD_INVOCATION_TEMPLATEPROXY, String.class, Object[].class, lD);
-            // Invoke the callback.
-            lMethod.invoke(lTemplateProxy, pCallbackMethod, lResponse, lPageContext);
-            // Define the mapping.
-            lStructWrapper.setMap(new HashMap() { {
-                // Buffer response data.
-                this.put("response", "success");
-                this.put("code", "1");
-                this.put("error", "Dispatched to " + pCallbackMethod + "!");
-            } });
-            // Return the failure case.
-            return new Struct(lStructWrapper);
+            final Object[] lResponse      = new Object[]{ pDataIn + " " + "world!"};
+            // Allocate a StructWrapper.
+            final Object   lStructWrapper = CLASS_DYNAMIC_STRUCTWRAPPER.newInstance();
+            // Fetch the 'setMap' method.
+            final Method   lSetMap        = lStructWrapper.getClass().getMethod(ColdfusionHandler.HANDLE_METHOD_INVOCATION_STRUCTWRAPPER, Map.class);
+            // TODO why does this throw an exception?
+            try {
+                // Fetch the invocation method for TemplateProxys (used to communicate back to ColdFusion).
+                final Method  lMethod        = ColdfusionHandler.CLASS_DYNAMIC_TEMPLATEPROXY.getMethod(ColdfusionHandler.HANDLE_METHOD_INVOCATION_TEMPLATEPROXY, String.class, Object[].class, ColdfusionHandler.CLASS_DYNAMIC_PAGECONTEXT);
+                // Invoke the callback.
+                lMethod.invoke(lTemplateProxy, pCallbackMethod, lResponse, lPageContext);
+                // Define that we succeeded in the invocation.
+                lResponseMap.put(ColdfusionHandler.FIELD_RESPONSE, ColdfusionHandler.RESPONSE_SUCCESS);
+                // Print our reference to the callback method.
+                lResponseMap.put(ColdfusionHandler.FIELD_TARGET,   pCallbackMethod);
+            }
+            catch(final Throwable pThrowable) {
+                // Print the Stack Trace.
+                pThrowable.printStackTrace();
+                // Declare the response.
+                lResponseMap.put(ColdfusionHandler.FIELD_RESPONSE, ColdfusionHandler.RESPONSE_ERRONEOUS);
+                lResponseMap.put(ColdfusionHandler.FIELD_CAUSE, pThrowable.getCause().toString());
+            }
+            // Define the data to encapsulate within the StructWrapper.
+            lSetMap.invoke(lStructWrapper, lResponseMap);
+            // Return the Struct.
+            return ColdfusionHandler.CLASS_DYNAMIC_STRUCT.getConstructor(ColdfusionHandler.CLASS_DYNAMIC_STRUCTWRAPPER).newInstance(lStructWrapper);
         }
         catch(final Throwable pThrowable) {
-            // Define the mapping.
-            lStructWrapper.setMap(new HashMap() { {
-                // Buffer response data.
-                this.put("response", "error");
-                this.put("code", "0");
-                this.put("error", "Failed to dispatch. ");
-            } });
-            // Return the failure case.
-            return new Struct(lStructWrapper);
+            // Print the Stack Trace.
+            pThrowable.printStackTrace();
         }
+        // Return the failure case; i.e, there is nothing we could return.
+        return null;
     }
 
 }
