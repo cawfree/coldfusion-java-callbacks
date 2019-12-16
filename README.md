@@ -8,3 +8,9 @@ A simple project setup demonstrating how to route data from ColdFusion through t
   - Copy the resulting `.jar` from the `lib/build/libs` directory into `<Coldfusion Directory>/cfusion/wwwroot/WEB-INF/lib`
   - Register this project as a valid **mapping**, using the **Logical Path** `callbacks` and **Directory Path** as the project directory, via the Coldfusion [Administrator Panel](http://localhost:8500/CFIDE/administrator/). (This is used for the _relative_ `.cfc` references made by the `.cfm`.)
   - Stop the ColdFusion Application Server and Start it again. (_This forces ColdFusion to yield the newly added binaries._)
+
+<p align="center">
+  <a href="https://www.buymeacoffee.com/cawfree">
+    <img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy @cawfree a coffee" width="232" height="50" />
+  </a>
+</p>
